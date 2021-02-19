@@ -4,6 +4,7 @@ Dedicated Class to compare the Control Sample VS. HDBSCAN selected clusters
 Héctor Cánovas May 2019 - now
 """
 
+import getpass
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools       import cycle
@@ -18,7 +19,9 @@ class LibCompare():
     Initialize the class.
     """
     def __init__(self):
-        self.colors  = plt.rcParams['axes.prop_cycle'].by_key()['color'] # Colors asigned to HDBSCAN Clusters
+        self.colors    = plt.rcParams['axes.prop_cycle'].by_key()['color'] # Colors asigned to HDBSCAN Clusters
+        self.user_name = getpass.getuser() 
+        self.out_path  = f'/home/{self.user_name}/'
 
 
     def __repr__(self):
@@ -30,6 +33,7 @@ class LibCompare():
         """
         Save pdf & print info on screen - Copy of lib_cluster.save_fig()
         """
+        fig_nm = f'{self.out_path}{fig_nm}'
         figure.savefig(fig_nm, bbox_inches = 'tight', overwrite = True)
         print('=' * (len(fig_nm) + comment_len))
         print(f'{text}{fig_nm}')
@@ -106,7 +110,7 @@ class LibCompare():
         self.new = cluster[cluster['Control'] == 'N']
         self.new['Simbad'] = [f'Gaia DR2 {np.str(inp)}' for inp in self.new['source_id']]
         
-        fname = 'simbad_list.txt'
+        fname = f'{self.out_path}simbad_list.txt'
         if write_simbad_query:
             Table([self.new['Simbad']]).write(fname, format = 'ascii.fast_no_header', overwrite = True)
         if verbose:
@@ -183,5 +187,5 @@ class LibCompare():
 
         plt.show()
         if save_fig:
-            fig_nm = f'{self.label}_hdb_minsamp_{self.min_samples}_prob_{self.probability}_mCls_{self.mCls}_comp.pdf'
+            fig_nm = f'{self.out_path}{self.label}_hdb_minsamp_{self.min_samples}_prob_{self.probability}_mCls_{self.mCls}_comp.pdf'
             self.save_fig(figure, fig_nm = fig_nm)

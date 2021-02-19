@@ -35,11 +35,11 @@ class Query():
         """
         Define catalogue/column attributes
         """
-        # Select Gaia DR2 Cols ===============
+        # Select Gaia EDR3 Cols ==============
         cols_astrom    = ['source_id', 'ra', 'dec', 'parallax', 'parallax_error', 'pmra', 'pmra_error', 'pmdec', 'pmdec_error'] # Astrometry
         cols_phot_m    = ['phot_' +  inp + '_mean_mag'             for inp in ['g', 'bp', 'rp']]                                # Photometry [mags]
         cols_phot_f    = ['phot_' +  inp + '_mean_flux_over_error' for inp in ['g', 'bp', 'rp']]                                # Photometry [Flux]
-        cols_phot_o    = ['l', 'b', 'visibility_periods_used', 'radial_velocity']                                               # Miscellaneus
+        cols_phot_o    = ['l', 'b', 'visibility_periods_used', 'ruwe']                                                          # Miscellaneus
 
         # Define WISE Cols ==============
         wise_cols      = ['ph_qual', 'ra as Wra', 'dec as Wdec', 'w1mpro as W1mag', 'w2mpro as W2mag',
@@ -78,20 +78,18 @@ class Query():
 
     def run_cone_search(self, qpar_SN  = 10, qpar_vis = 7,qpar_ruwe = 1.40, verbose = True):
         """
-        Run a Cone Search ADQL query on the Gaia DR2 archive. By default the code applies a selection criteria: objets with
+        Run a Cone Search ADQL query on the Gaia DR3 archive. By default the code applies a selection criteria: objets with
         parallax S/N <10, visibility periods used < 7, and RUWE >1.40 are excluded.
         """
         # 1.- Define ADQL query ================================
         query  = ("SELECT " + self.gaia_cols + " "
-                ",sqrt(gaia.astrometric_chi2_al/(gaia.astrometric_n_good_obs_al-5)) as unit_weight_e, g_ruwe.ruwe as ruwe "
-                "FROM gaiadr2.gaia_source as gaia "
-                "LEFT OUTER JOIN gaiadr2.ruwe  AS g_ruwe ON gaia.source_id = g_ruwe.source_id "
+                "FROM gaiaedr3.gaia_source as gaia "
                 "WHERE 1=CONTAINS( "
-                "POINT('ICRS',ra,dec), "
-                f"CIRCLE('ICRS',{self.ADQL['ra']:5.2F}, {self.ADQL['dec']:5.2F}, {self.ADQL['radii']:5.2F})) "
+                f"POINT('ICRS',{self.ADQL['ra']:5.2F},{self.ADQL['dec']:5.2F}), "
+                f"CIRCLE('ICRS',ra, dec, {self.ADQL['radii']:5.2F})) "
                 f"AND parallax >= {self.ADQL['para_m']:5.2F} AND parallax <= {self.ADQL['para_M']:5.2F} "
                 f"AND gaia.source_id IS NOT NULL AND gaia.parallax/gaia.parallax_error >{qpar_SN} "
-                f"AND gaia.visibility_periods_used >{qpar_vis} AND g_ruwe.ruwe <{qpar_ruwe}")
+                f"AND gaia.visibility_periods_used >{qpar_vis} AND ruwe <{qpar_ruwe}")
         # 2.- Run ADQL query ===================================
         warnings.simplefilter('ignore', category=AstropyWarning)
         print(f'RUNNING ADQL ASYNCRHRONOUS QUERY ' + '=' * 57)
@@ -148,7 +146,8 @@ class Query():
                 f"AND w4mpro_error IS NOT NULL")
         # 3.- Run ADQL query ===================================
         print(f'RUNNING ADQL SYNCRHRONOUS QUERY ' + '=' * 57)
-        job      = Gaia.launch_job(query= query, upload_resource = upload_resource[0], upload_table_name = upload_table_name, verbose = True)
+        job      = Gaia.launch_job(query= query, upload_resource = upload_resource[0], 
+            upload_table_name = upload_table_name, verbose = True)
         self.cat = job.get_results()
 
         if verbose:
@@ -174,7 +173,7 @@ class Query():
 
         # 2.- Write ADQL query ================================= 
         query  = ("SELECT input_table.col2mass, " + self.gaia_cols + 
-                  ",sqrt(gaia.astrometric_chi2_al/(gaia.astrometric_n_good_obs_al-5)) as unit_weight_e, g_ruwe.ruwe as ruwe "
+                  ",sqrt(gaia.astrometric_chi2_al/(gaia.astrometric_n_good_obs_al-5)) as unit_weight_e "
                   "FROM tap_upload.input_table as input_table "
                   "LEFT OUTER JOIN gaiadr2.tmass_best_neighbour AS xmatch ON input_table.col2mass = xmatch.original_ext_source_id "
                   "LEFT OUTER JOIN gaiadr2.gaia_source          AS gaia   ON xmatch.source_id     = gaia.source_id "

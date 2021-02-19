@@ -4,15 +4,15 @@ Python Class to apply HDBSCAN to a Gaia DR2 sample.
 Héctor Cánovas May 2019 - now 
 """
 
-import warnings
+import warnings, getpass
 import hdbscan
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.visualization    import hist
 from astropy.table            import Table, join
 from sklearn                  import preprocessing
-from plotters             import Plotters as Plotters
-from utils                import Utils    as Utils
+from plotters                 import Plotters as Plotters
+from utils                    import Utils    as Utils
 
 # Extra Methods ================================
 def read_float_input(text = 'Introduce Input: '):
@@ -30,9 +30,15 @@ class Cluster():
     """
     Initialize the class.
     """
-    def __init__(self, verbose = False):
+    def __init__(self, verbose = False, data_labs = True):
         warnings.filterwarnings('ignore')
-        self.colors  = plt.rcParams['axes.prop_cycle'].by_key()['color'] # HDBSCAN Cluster colors
+        self.colors    = plt.rcParams['axes.prop_cycle'].by_key()['color'] # HDBSCAN Cluster colors
+        self.user_name = getpass.getuser() 
+        if data_labs:
+            self.out_path  = f'/home/{self.user_name}/'
+        else:
+            self.out_path  = f''            
+
 
 
     def __repr__(self):
@@ -65,7 +71,7 @@ class Cluster():
         Save HDBSCAN clusters (final step)
         """
         i         = -1
-        root_name = f'{self.label}_hdb_minsamp_{self.min_samples}_prob_{self.probability}_mCls_{self.mCls}'
+        root_name = f'{self.out_path}{self.label}_hdb_minsamp_{self.min_samples}_prob_{self.probability}_mCls_{self.mCls}'
         for cluster in self.clusters:
             i         = i + 1
             self.save_tb(cluster, tb_nm = root_name + f'_cl_{i}.vot', text = 'HDBSCAN Cluster data saved as: ')
@@ -127,7 +133,8 @@ class Cluster():
             for scl_mean_i in scl_mean:
                 print(f'{next(feats):5s}: {scl_mean_i:>10.2f}, {next(scl_std):5.2f}')
         if save_scl:
-            self.save_tb(Table(self.data_scl), tb_nm = f'{self.label}_scl_{self.scaler}.vot')
+            tb_nm = f'{self.out_path}{self.label}_scl_{self.scaler}.vot'
+            self.save_tb(Table(self.data_scl), tb_nm = tb_nm)
 
 
     def set_probability_thresold(self, probability = None, verbose = True):
@@ -322,7 +329,8 @@ class Cluster():
 
         plt.show()
         if save_fig:
-            self.save_fig(figure, fig_nm = f'{self.label}_scl_{self.scaler}.pdf')
+            fig_nm = f'{self.out_path}{self.label}_scl_{self.scaler}.pdf'
+            self.save_fig(figure, fig_nm = fig_nm)
 
 
     def plot_clusters(self, alpha_main = 1.0, figsize = [30,9], markersize = 10, fontsize = 24, 
@@ -401,7 +409,7 @@ class Cluster():
         plt.show()
 
         if save_fig:
-            fig_nm = f'{self.label}_hdb_minsamp_{self.min_samples}_prob_{self.probability}_mCls_{self.mCls}.pdf'
+            fig_nm = f'{self.out_path}{self.label}_hdb_minsamp_{self.min_samples}_prob_{self.probability}_mCls_{self.mCls}.pdf'
             self.save_fig(figure, fig_nm = fig_nm)
 
 
@@ -446,7 +454,7 @@ class Cluster():
         plt.show()
 
         if save_fig:
-            fig_nm = f'{self.label}_hdb_minsamp_{self.min_samples}_prob_{self.probability}_barchart.pdf'
+            fig_nm = f'{self.out_path}{self.label}_hdb_minsamp_{self.min_samples}_prob_{self.probability}_barchart.pdf'
             self.save_fig(figure, fig_nm = fig_nm)
 
 

@@ -1,10 +1,10 @@
 """"
-Python Class with dedicated utilities/methods to analyse Gaia DR2 samples
+Python Class with dedicated utilities/methods to analyse Gaia DR3 samples
 
 Héctor Cánovas Oct 2019 - now
 """
 
-import glob, warnings
+import glob, warnings, getpass
 import numpy as np
 from astropy                  import units as u
 from astropy.coordinates      import SkyCoord
@@ -16,7 +16,12 @@ class Utils():
     """
     Initialize the class.
     """
-    def __init__(self, color = 'magenta', label = 'Sample'):
+    def __init__(self, color = 'magenta', label = 'Sample', data_labs = True):
+        self.user_name = getpass.getuser() 
+        if data_labs:
+            self.out_path  = f'/home/{self.user_name}/'
+        else:
+            self.out_path  = f''            
         self.color = color
         self.label = label
         self.bcols = ['ra', 'dec', 'pmra', 'pmdec', 'pmra_error', 'pmdec_error', 'parallax','phot_g_mean_mag',
@@ -107,7 +112,7 @@ class Utils():
 
     def add_extra_cols(self, verbose = True):
         """
-        Add extra columnts to a Gaia DR2 sample.
+        Add extra columnts to a Gaia DR3 sample.
         """
         if 'distance' not in self.cat.colnames:
             self.add_distance(verbose = verbose)
@@ -132,7 +137,7 @@ class Utils():
         ncol  = MaskedColumn(data = 1./self.cat['parallax'] * 1000, name = 'distance', unit = u.parsec, format = '4.1F')
         self.cat.add_column(ncol)
         if verbose:
-            print('Adding new column to Gaia DR2 dataset: Distance')
+            print('Adding new column to Gaia DR3 dataset: Distance')
 
 
     def add_absmag(self, verbose = True):
@@ -144,7 +149,7 @@ class Utils():
             self.cat[col + '_abs'].format = self.cat[col].format
             self.cat[col + '_abs'].unit   = self.cat[col].unit            
         if verbose:
-            print('Adding new columns to Gaia DR2 dataset: Absolute Magnitudes')
+            print('Adding new columns: Absolute Magnitudes')
 
 
     def add_mag_errs(self, verbose = True):
@@ -159,21 +164,7 @@ class Utils():
             self.cat['phot_' + band + '_mean_mag_err'].unit   = self.cat['phot_' + band + '_mean_mag'].unit
             self.cat['phot_' + band + '_mean_mag_err'].format = self.cat['phot_' + band + '_mean_mag'].format
         if verbose:
-            print('Adding new columns to Gaia DR2 dataset: Magnitude Errors')
-
-
-    def add_galactic(self, verbose = True):
-        """
-        Add "Galactic Coordinates" columns to the catalogue.
-        """
-        coords = SkyCoord(ra=self.cat['ra'], dec=self.cat['dec'], frame='icrs')
-        self.cat['l'] = coords.galactic.l.degree * u.degree
-        self.cat['b'] = coords.galactic.b.degree * u.degree
-
-        self.cat['l'].format = '10.5F'
-        self.cat['b'].format = '10.5F'
-        if verbose:
-            print('Adding new columns to Gaia DR2 dataset: Galactic Coordinates (l & b)')
+            print('Adding new columns: Magnitude Errors')
 
 
     def add_3D_galactic(self, verbose = True):
@@ -185,7 +176,7 @@ class Utils():
         self.cat['Y_gal'] = coords.cartesian.y
         self.cat['Z_gal'] = coords.cartesian.z
         if verbose:
-            print('Adding new columns to Gaia DR2 dataset: Galactic Spatial Coordinates (X, Y, Z)_Gal')
+            print('Adding new columns to Gaia DR3 dataset: Galactic Spatial Coordinates (X, Y, Z)_Gal')
 
 
     def add_pm_mod(self, verbose = True):
@@ -194,7 +185,7 @@ class Utils():
         """
         self.cat['pm_mod'] = np.sqrt(self.cat['pmra']**2 + self.cat['pmdec']**2)
         if verbose:
-            print('Adding new columns to Gaia DR2 dataset: Proper Motion Modulus')
+            print('Adding new columns: Proper Motion Modulus')
 
 
     def get_vrad_stats(self):
@@ -242,7 +233,7 @@ class Utils():
         Save the catalogue as an Astropy Table
         """
         print()
-        fname = self.label.replace(' ', '_') + '.vot'
+        fname = f"{self.out_path}{self.label.replace(' ', '_')}.vot"
         text  = f'Saving {self.label} as: {fname}'
         print('=' * len(text))
         print(text)
